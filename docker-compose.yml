@@ -1,0 +1,162 @@
+services:
+  #   # --- Supabase: Banco de Dados ---
+  #   db:
+  #     image: public.ecr.aws/supabase/postgres:17.6.1.072
+  #     container_name: supabase_db
+  #     ports:
+  #       - "54322:5432"
+  #     environment:
+  #       POSTGRES_PASSWORD: postgres
+  #       POSTGRES_DB: postgres
+  #     volumes:
+  #       - supabase_data:/var/lib/postgresql/data
+  #     restart: always
+
+  #   # --- Supabase: API REST (PostgREST) ---
+  #   rest:
+  #     image: public.ecr.aws/supabase/postgrest:v14.3
+  #     container_name: supabase_rest
+  #     depends_on:
+  #       - db
+  #     environment:
+  #       PGRST_DB_URI: postgres://supabase_admin:postgres@db:5432/postgres
+  #       PGRST_DB_SCHEMA: public
+  #       PGRST_DB_ANON_ROLE: anon
+  #       PGRST_JWT_SECRET: ${SUPABASE_SERVICE_ROLE_KEY}
+  #     restart: always
+
+  #   # --- Supabase: Auth (GoTrue) ---
+  #   auth:
+  #     image: public.ecr.aws/supabase/gotrue:v2.185.0
+  #     container_name: supabase_auth
+  #     depends_on:
+  #       - db
+  #     environment:
+  #       GOTRUE_DB_DRIVER: postgres
+  #       GOTRUE_DB_DATABASE_URL: postgres://supabase_admin:postgres@db:5432/postgres
+  #       GOTRUE_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+  #       GOTRUE_JWT_EXP: 3600
+  #       GOTRUE_EXTERNAL_EMAIL_ENABLED: "false"
+  #       GOTRUE_API_EXTERNAL_URL: http://localhost:54321/auth/v1
+  #       API_EXTERNAL_URL: http://localhost:54321/auth/v1
+  #       GOTRUE_SITE_URL: http://localhost:3000
+  #     restart: always
+
+  #   # --- Supabase: Gateway (Kong) ---
+  #   # Nota: Simplificando para facilitar o uso local. 
+  #   # Se preferir usar o CLI do Supabase (supabase start), 
+  #   # você pode comentar as seções de db/auth/rest/studio aqui.
+  #   kong:
+  #     image: public.ecr.aws/supabase/kong:2.8.1
+  #     container_name: supabase_kong
+  #     ports:
+  #       - "54321:8000"
+  #     environment:
+  #       KONG_DATABASE: "off"
+  #       KONG_DECLARATIVE_CONFIG: /app/kong.yml
+  #     volumes:
+  #       - ./kong.yml:/app/kong.yml
+  #     restart: always
+
+  #   # --- Supabase: Storage ---
+  #   storage:
+  #     image: public.ecr.aws/supabase/storage-api:v0.43.0
+  #     container_name: supabase_storage
+  #     depends_on:
+  #       - db
+  #     environment:
+  #       ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+  #       SERVICE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+  #       PGRST_JWT_SECRET: ${SUPABASE_SERVICE_ROLE_KEY}
+  #       DATABASE_URL: postgres://postgres:postgres@db:5432/postgres
+  #       FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+  #       STORAGE_BACKEND: file
+  #       GLOBAL_S3_BUCKET: local-bucket
+  #       REGION: us-east-1
+  #       TENANT_ID: stub
+  #       STORAGE_MAX_REQUEST_SIZE: 52428800
+  #       FILE_SIZE_LIMIT: 52428800
+  #     volumes:
+  #       - supabase_storage:/var/lib/storage
+  #     restart: always
+
+  #   # --- Supabase: Metadados (Necessário para o Studio) ---
+  #   pg_meta:
+  #     image: public.ecr.aws/supabase/postgres-meta:v0.95.2
+  #     container_name: supabase_pg_meta
+  #     environment:
+  #       PG_META_DB_HOST: db
+  #       PG_META_DB_NAME: postgres
+  #       PG_META_DB_USER: postgres
+  #       PG_META_DB_PASSWORD: postgres
+  #       PG_META_DB_PORT: 5432
+  #     restart: always
+
+  #   # --- Supabase: Dashboard (Studio) ---
+  #   studio:
+  #     image: public.ecr.aws/supabase/studio:2026.01.12-sha-4e9b718
+  #     container_name: supabase_studio
+  #     ports:
+  #       - "54323:3000"
+  #     environment:
+  #       SUPABASE_URL: http://kong:8000
+  #       STUDIO_PG_META_URL: http://supabase_pg_meta:8080
+  #       SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+  #       SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+  #     depends_on:
+  #       - pg_meta
+  #     restart: always
+
+  # --- Aplicação Frontend (Next.js) ---
+  fatura-admin:
+    build:
+      context: ./apps/fatura-admin
+      dockerfile: Dockerfile
+    container_name: nextjs_admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/fatura-admin:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    environment:
+      - WATCHPACK_POLLING=true
+      - NEXT_TELEMETRY_DISABLED=1
+      - NODE_OPTIONS=--max-old-space-size=2048
+      - NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+      - SUPABASE_URL_INTERNAL=http://host.docker.internal:54321
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # depends_on:
+    #   - db
+    #   - kong
+    restart: always
+
+  # --- Aplicação Backend (FastAPI) ---
+  api-python:
+    build:
+      context: ./apps/api-python
+      dockerfile: Dockerfile
+    container_name: python_worker
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./apps/api-python/backend:/app/backend
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - NEXT_PUBLIC_SUPABASE_URL=http://host.docker.internal:54321
+      - DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:54322/postgres
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+    # depends_on:
+    #   - db
+    #   - kong
+    restart: always
+
+volumes:
+  supabase_data:
+  supabase_storage:

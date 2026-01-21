@@ -1,0 +1,19 @@
+services:
+  fatura-admin:
+    mem_limit: 2g
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nextjs_admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    env_file:
+      - .env.local
+    environment:
+      - WATCHPACK_POLLING=true # Força o Next.js a verificar mudanças no Windows/WSL
+      - NEXT_TELEMETRY_DISABLED=1
+      - NODE_OPTIONS=--max-old-space-size=2048
+    restart: always
