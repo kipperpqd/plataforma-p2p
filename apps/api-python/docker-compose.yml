@@ -1,0 +1,18 @@
+services:
+  api-python:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: python_worker
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./backend:/app/backend # Mapeia sua pasta local de código
+    env_file:
+      - .env
+    # O SEGREDO DO RELOAD: uvicorn monitorando a pasta backend
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: always

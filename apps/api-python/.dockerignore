@@ -1,0 +1,14 @@
+# O vilão da performance
+node_modules
+**/node_modules
+frontend/node_modules
+
+# Arquivos de sistema e git
+.git
+.gitignore
+.dockerignore
+.env
+
+# Cache do Python
+__pycache__
+*.pyc
