@@ -15,8 +15,10 @@ export async function proxy(request: NextRequest) {
   const supabaseUrl = process.env.SUPABASE_URL_INTERNAL || process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
+  const isProtectedRoute = pathname.startsWith('/admin') || pathname.startsWith('/cliente')
+
   if (!supabaseUrl || !supabaseAnonKey) {
-    if (pathname !== '/login') {
+    if (isProtectedRoute) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
     return response
@@ -55,7 +57,7 @@ export async function proxy(request: NextRequest) {
       authError = result?.error
     } catch (timeoutError: any) {
       console.error('Middleware Supabase timeout:', timeoutError.message)
-      if (pathname !== '/login') {
+      if (isProtectedRoute) {
         return NextResponse.redirect(new URL('/login', request.url))
       }
       return response
@@ -65,7 +67,7 @@ export async function proxy(request: NextRequest) {
       if (authError.message !== 'Auth session missing!') {
         console.error('Proxy Supabase error:', authError.message)
       }
-      if (pathname !== '/login') {
+      if (isProtectedRoute) {
         return NextResponse.redirect(new URL('/login', request.url))
       }
       return response
@@ -78,7 +80,7 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL(isAdmin ? '/admin/clientes' : '/cliente', request.url))
     }
 
-    if (!user && pathname !== '/login') {
+    if (!user && isProtectedRoute) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
 
@@ -89,7 +91,7 @@ export async function proxy(request: NextRequest) {
     return response
   } catch (error: any) {
     console.error('Middleware error:', error?.message || error)
-    if (pathname !== '/login') {
+    if (isProtectedRoute) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
     return response
