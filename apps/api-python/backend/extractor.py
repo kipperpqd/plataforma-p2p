@@ -38,11 +38,18 @@ def extrair_dados_fatura(url_pdf):
         medidor_match = re.search(r"(\d+-[A-Z]{3}-\d+)", p1)
         medidor_regex = medidor_match.group(1) if medidor_match else "NAO_ENCONTRADO"
 
+        # Regex para Unidade Consumidora e Código do Cliente (Formato 2026: 123 / 456)
+        uc_client_match = re.search(r"(\d+)\s*/\s*(\d+)", p1)
+        uc_regex = uc_client_match.group(1) if uc_client_match else None
+        cliente_regex = uc_client_match.group(2) if uc_client_match else None
+
         print("🔍 [PASSO 3] Executando Regex nos itens...", flush=True)
         itens = []
         # Padrão 1: Itens de Consumo/Compensação (kWh)
+        # Mudamos de .*? para .+ para que seja guloso e pegue a ULTIMA unidade da linha
+        # Isso evita que o 'mPT' ou 'oUC' dentro da descrição quebrem o pattern
         item_pattern = re.compile(
-            r"^(?P<desc>.*?)\s+(?P<unid>kWh|mUC|mPT)\s+(?P<quant>[0-9\.,\-]+)\s+(?P<preco>[0-9\.,\-]+)\s+(?P<valor>[0-9\.,\-]+)",
+            r"^(?P<desc>.+)\s+(?P<unid>kWh|mUC|mPT)\s+(?P<quant>[0-9\.,\-]+)\s+(?P<preco>[0-9\.,\-]+)\s+(?P<valor>[0-9\.,\-]+)",
             re.MULTILINE | re.IGNORECASE
         )
         for match in item_pattern.finditer(p1):
@@ -63,7 +70,8 @@ def extrair_dados_fatura(url_pdf):
         Atue como um especialista em faturas Enel. Extraia os dados em JSON.
         
         REGRAS CRÍTICAS PARA IDENTIFICAÇÃO (MUITO IMPORTANTE):
-        - 'codigo_cliente': Nas faturas de 2026, o campo 'UC' contém dois números separados por barra (ex: 1234567 / 89012345). O SEGUNDO número (após a barra) é o 'codigo_cliente'. Se encontrar esse formato, use-o. Caso contrário, busque por 'Nº do Cliente'.
+        - 'codigo_cliente': Nas faturas de 2026, o campo 'UC' contém dois números separados por barra (ex: 1234567 / 89012345). O SEGUNDO número (após a barra) é o 'codigo_cliente'. Caso contrário, busque por 'Nº do Cliente' ou 'Cód. Cliente'.
+        - 'unidade_consumidora': Se houver o formato '1234567 / 63892615', o PRIMEIRO número é a UC.
         - 'numero_medidor': Procure por um padrão como '12345678' ou '12345678-ABC-123'. Geralmente fica próximo à data de leitura.
 
         REGRAS CRÍTICAS PARA SALDOS (Busque em todo o texto, especialmente 'Mensagens Importantes'):
@@ -98,7 +106,8 @@ def extrair_dados_fatura(url_pdf):
 
         # CONSOLIDAÇÃO
         dados_finais = {
-            "codigo_cliente": str(ia_data.get("codigo_cliente") or "NAO_ENCONTRADO"),
+            "codigo_cliente": str(ia_data.get("codigo_cliente") or cliente_regex or "NAO_ENCONTRADO"),
+            "unidade_consumidora": str(ia_data.get("unidade_consumidora") or uc_regex or "NAO_ENCONTRADO"),
             "numero_medidor": (medidor_regex if len(str(ia_data.get("numero_medidor", ""))) < 10 else ia_data.get("numero_medidor")) or medidor_regex,
             "mes_referencia": str(ia_data.get("mes_referencia") or "NAO_ENCONTRADO"),
             "nr_dias": safe_int(ia_data.get("nr_dias"), 30),
