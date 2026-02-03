@@ -5,8 +5,8 @@ services:
       context: ./apps/fatura-admin
       dockerfile: Dockerfile
     container_name: nextjs_admin
-    ports:
-      - "3000:3000"
+    # ports:
+    #   - "3000:3000"
     volumes:
       - ./apps/fatura-admin:/app
       - /app/node_modules
@@ -26,8 +26,8 @@ services:
       context: ./apps/api-python
       dockerfile: Dockerfile
     container_name: python_worker
-    ports:
-      - "8000:8000"
+    # ports:
+    #   - "8000:8000"
     volumes:
       - ./apps/api-python/backend:/app/backend
     env_file:
