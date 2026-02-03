@@ -32,6 +32,7 @@ async def home():
 @app.post("/webhook/fatura")
 async def webhook_fatura(request: Request, background_tasks: BackgroundTasks):
     payload = await request.json()
+    print(f"📥 Webhook recebido! Payload: {payload}")
     record = payload.get('record')
     
     if not record:
