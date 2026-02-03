@@ -100,7 +100,7 @@ def extrair_dados_fatura(url_pdf):
         """
 
         result = client.models.generate_content(
-            model="gemini-3.0-flash",
+            model="gemini-1.5-flash",
             contents=[prompt, types.Part.from_bytes(data=pdf_content, mime_type="application/pdf")],
             config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0)
         )
