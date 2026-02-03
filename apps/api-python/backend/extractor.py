@@ -23,12 +23,7 @@ def extrair_dados_fatura(url_pdf):
     try:
         print(f"\n🚀 [PASSO 1] Baixando PDF: {url_pdf[:60]}...", flush=True)
         try:
-            # Ajuste dinâmico: Docker não entende 'localhost' do Windows, trocamos por 'host.docker.internal'
-            url_download = url_pdf.replace("localhost", "host.docker.internal")
-            if url_download != url_pdf:
-                print(f"🔄 Traduzindo URL para Docker: {url_download[:60]}...", flush=True)
-                
-            req = requests.get(url_download, timeout=30)
+            req = requests.get(url_pdf, timeout=30)
             req.raise_for_status()
             pdf_content = req.content
         except Exception as http_err:
@@ -63,9 +58,7 @@ def extrair_dados_fatura(url_pdf):
         if cip_match:
             itens.append({"descricao": "CIP ILUM PUB PREF MUNICIPAL", "quantidade": 0, "unitario": 0.0, "valor": clean_float(cip_match.group(1))})
         
-            #print(f"💡 CIP encontrada: {cip_match.group(2)}", flush=True)
-
-        print("🤖 [PASSO 4] Chamando Gemini 2.0 Flash para Saldos...", flush=True)
+        print("🤖 [PASSO 4] Chamando Gemini 2.0 Flash para Metadados...", flush=True)
         prompt = """
         Atue como um especialista em faturas Enel. Extraia os dados em JSON.
         
@@ -115,11 +108,8 @@ def extrair_dados_fatura(url_pdf):
             "linha_digitavel_enel": str(ia_data.get("linha_digitavel") or "NAO_ENCONTRADO"),
             "tributos": clean_float(ia_data.get("tributos", 0)),
             "ft_enel_com_gd": clean_float(ia_data.get("ft_enel_com_gd", 0)),
-            
-            # SALDOS (Aqui estava o problema)
             "saldo_utilizado_mes": clean_float(ia_data.get("saldo_utilizado_mes", 0)),
             "saldo_total_atualizado": clean_float(ia_data.get("saldo_total_atualizado", 0)),
-            
             "data_vencimento_bruta": ia_data.get("data_vencimento"),
             "proxima_leitura_bruta": ia_data.get("proxima_leitura"),
             "itens_faturamento": itens

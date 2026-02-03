@@ -1,17 +1,20 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   let response = NextResponse.next({ request: { headers: request.headers } })
 
+  // BYPASS AUTH: Se estiver ativo e for rota admin, libera direto no topo
+  if (process.env.BYPASS_AUTH === 'true' && pathname.startsWith('/admin')) {
+    console.log(`[Middleware] BYPASS ATIVO para rota admin: ${pathname}`)
+    return response
+  }
+
   // Validação das variáveis de ambiente
-  // SUPABASE_URL_INTERNAL é usado pelo servidor (dentro do Docker)
-  // NEXT_PUBLIC_SUPABASE_URL é usado pelo cliente (browser)
   const supabaseUrl = process.env.SUPABASE_URL_INTERNAL || process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  // Se as variáveis não estiverem definidas, redireciona para login
   if (!supabaseUrl || !supabaseAnonKey) {
     if (pathname !== '/login') {
       return NextResponse.redirect(new URL('/login', request.url))
@@ -40,7 +43,6 @@ export async function middleware(request: NextRequest) {
       }
     )
 
-    // Atualiza a sessão e verifica o usuário com timeout explícito
     const getUserPromise = supabase.auth.getUser()
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Timeout ao conectar com Supabase')), 5000)
@@ -59,7 +61,6 @@ export async function middleware(request: NextRequest) {
       return response
     }
 
-    // Se houver erro ou não conseguir conectar, permite apenas login
     if (authError) {
       if (authError.message !== 'Auth session missing!') {
         console.error('Proxy Supabase error:', authError.message)
@@ -73,9 +74,8 @@ export async function middleware(request: NextRequest) {
     const userEmail = user?.email
     const isAdmin = userEmail === 'admin@p2p.com'
 
-    // Redirecionamentos Inteligentes (Lógica de Auth)
     if (user && pathname === '/login') {
-      return NextResponse.redirect(new URL(isAdmin ? '/admin' : '/cliente', request.url))
+      return NextResponse.redirect(new URL(isAdmin ? '/admin/clientes' : '/cliente', request.url))
     }
 
     if (!user && pathname !== '/login') {
@@ -88,7 +88,6 @@ export async function middleware(request: NextRequest) {
 
     return response
   } catch (error: any) {
-    // Em caso de erro inesperado, redireciona para login
     console.error('Middleware error:', error?.message || error)
     if (pathname !== '/login') {
       return NextResponse.redirect(new URL('/login', request.url))
@@ -98,10 +97,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  /* Otimizado: Ignora arquivos estáticos e imagens. 
-     Removemos o Webhook daqui se ele não precisar de autenticação Supabase,
-     deixando ele passar direto pelo Next.js sem processar o middleware.
-  */
   matcher: [
     '/admin/:path*',
     '/cliente/:path*',
