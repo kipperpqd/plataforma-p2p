@@ -7,9 +7,9 @@ services:
     container_name: nextjs_admin
     # ports:
     #   - "3000:3000"
-    volumes:
-      - ./apps/fatura-admin:/app
-      - /app/node_modules
+    # volumes:
+    #   - ./apps/fatura-admin:/app
+    #   - /app/node_modules
     env_file:
       - .env
     environment:
@@ -28,8 +28,8 @@ services:
     container_name: python_worker
     # ports:
     #   - "8000:8000"
-    volumes:
-      - ./apps/api-python/backend:/app/backend
+    # volumes:
+    #   - ./apps/api-python/backend:/app/backend
     env_file:
       - .env
     environment:
@@ -37,5 +37,6 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+    # O comando abaixo deve bater com a estrutura interna da imagem
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000
     restart: always
