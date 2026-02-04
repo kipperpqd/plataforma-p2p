@@ -74,7 +74,7 @@ export async function proxy(request: NextRequest) {
     }
 
     const userEmail = user?.email
-    const isAdmin = userEmail === 'admin@p2p.com'
+    const isAdmin = userEmail === 'p2penergia@gmail.com'
 
     if (user && pathname === '/login') {
       return NextResponse.redirect(new URL(isAdmin ? '/admin/clientes' : '/cliente', request.url))
