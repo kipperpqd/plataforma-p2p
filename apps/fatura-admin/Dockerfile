@@ -8,6 +8,7 @@ RUN npm ci
 
 # Estágio 2: Build da aplicação
 FROM node:20-alpine AS builder
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
