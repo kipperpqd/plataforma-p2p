@@ -17,9 +17,6 @@ services:
       - NODE_OPTIONS=--max-old-space-size=2048
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-      - ASAAS_API_KEY=${ASAAS_API_KEY}
-      - ASAAS_WEBHOOK_TOKEN=${ASAAS_WEBHOOK_TOKEN}
-      - BYPASS_AUTH=${BYPASS_AUTH}
     restart: always
 
   # --- Aplicação Backend (FastAPI) ---
