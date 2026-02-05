@@ -5,18 +5,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  webpack: (config, { dev, isServer }) => {
-    if (dev && !isServer) {
-      config.watchOptions = {
-        poll: 1000, // Verifica mudanças a cada 1 segundo
-        aggregateTimeout: 300, // Aguarda um pouco antes de recompilar
-      };
-    }
-    return config;
-  },
+  // O Next.js 15+ já ignora ESLint por padrão se não configurado
 };
 
 export default nextConfig;
