@@ -10,8 +10,6 @@ services:
     # volumes:
     #   - ./apps/fatura-admin:/app
     #   - /app/node_modules
-    env_file:
-      - .env
     environment:
       - NEXT_TELEMETRY_DISABLED=1
       - NODE_OPTIONS=--max-old-space-size=2048
@@ -29,8 +27,6 @@ services:
     #   - "8000:8000"
     # volumes:
     #   - ./apps/api-python/backend:/app/backend
-    env_file:
-      - .env
     environment:
       - PYTHONUNBUFFERED=1
       - DATABASE_URL=${DATABASE_URL}
